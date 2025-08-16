@@ -26,7 +26,7 @@ class FcmTokenManager {
       _retryCount++;
     }
 
-    print("🔑 FCM 토큰: $token");
+    print("🔑 FCM 토큰FCM 토큰: $token");
 
     // 개선된 토큰 저장 및 확인
     bool success = await createTokenUser();

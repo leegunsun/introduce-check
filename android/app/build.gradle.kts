@@ -11,9 +11,11 @@ plugins {
 android {
     namespace = "com.example.introduceme"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"  // Firebase 플러그인 호환성을 위한 NDK 버전 업데이트
 
     compileOptions {
+        // Core library desugaring 활성화 (flutter_local_notifications 요구사항)
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -31,6 +33,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // MultiDex 활성화 (desugaring 요구사항)
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -44,4 +49,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Core library desugaring 의존성 추가
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

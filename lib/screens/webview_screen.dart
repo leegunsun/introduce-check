@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:introduceme/fcm/NotificationUtility.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../fcm/FcmTokenManager.dart';
 import '../providers/webview_provider.dart';
@@ -23,6 +24,7 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationUtility().initMessaging();
     FcmTokenManager.init();
     _initializeController();
   }

@@ -12,6 +12,7 @@ class WebViewState {
   final String? errorMessage;
 
   final String FORCENULL = "__FORCE_NULL__";
+  final int? errorCount;
 
   const WebViewState({
     required this.currentUrl,
@@ -20,6 +21,7 @@ class WebViewState {
     required this.canGoBack,
     required this.canGoForward,
     this.errorMessage,
+    this.errorCount
   });
 
   WebViewState copyWith({
@@ -29,6 +31,7 @@ class WebViewState {
     bool? canGoBack,
     bool? canGoForward,
     String? errorMessage,
+    int? errorCount
   }) {
     return WebViewState(
       currentUrl: currentUrl ?? this.currentUrl,
@@ -68,6 +71,15 @@ class WebViewNotifier extends StateNotifier<WebViewState> {
   /// 로딩 상태를 변경
   void setLoading(bool isLoading) {
     state = state.copyWith(isLoading: isLoading);
+  }
+
+  /// 에러 카운트
+  int setErrorCounter([int? setCount]) {
+    int currentCount = state.errorCount ?? setCount ?? 0;
+    currentCount += 1;
+    state = state.copyWith(errorCount: currentCount);
+
+    return state.errorCount ?? 0;
   }
 
   /// 네비게이션 상태를 업데이트
@@ -140,8 +152,17 @@ NavigationDelegate createNavigationDelegate(WidgetRef ref) {
     },
     onWebResourceError: (WebResourceError error) {
       debugPrint('웹 리소스 에러: ${error.description}');
-      ref.read(webViewProvider.notifier).setError(error.description);
-      ref.read(webViewProvider.notifier).setLoading(false);
+
+      int updateCount = ref.read(webViewProvider.notifier).setErrorCounter();
+
+      if(updateCount > 5) {
+        ref.read(webViewProvider.notifier).setError(error.description);
+        ref.read(webViewProvider.notifier).setLoading(false);
+      } else {
+        ref.read(webViewProvider.notifier).setErrorCounter(0);
+      }
+
+
     },
     onNavigationRequest: (NavigationRequest request) {
       // URL 제한 로직
