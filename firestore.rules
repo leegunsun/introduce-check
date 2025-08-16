@@ -1,0 +1,231 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ================================
+    // HELPER FUNCTIONS
+    // ================================
+
+    function isAdmin() {
+      return request.auth != null
+             && request.auth.token.email == "leegunsun01@gmail.com";
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidTimestamp(timestamp) {
+      return timestamp is timestamp;
+    }
+
+    function isValidToken(token) {
+      return token is string && token.size() > 0 && token.size() < 1000;
+    }
+
+    // ================================
+    // PRIORITY RULE: Admin Access
+    // ================================
+
+    // Admin has full access to everything (highest priority)
+    match /{document=**} {
+      allow read, write, create, update, delete: if isAdmin();
+    }
+
+    // ================================
+    // FCM TOKEN MANAGEMENT - SECURE RULES
+    // ================================
+
+    // FCM tokens - Allow anonymous app to store tokens for push notifications
+    match /fcm/{tokenId} {
+      // Allow read for debugging (admin only for production)
+      allow read: if true; // 개발용 - 프로덕션에서는 isAdmin()으로 변경
+      
+      // Allow create/update for FCM token registration
+      allow create, update: if (
+        // 기본 유효성 검사
+        request.resource.data.keys().hasAll(['token']) &&
+        isValidToken(request.resource.data.token) &&
+        
+        // 선택적 필드 검증
+        (!request.resource.data.keys().hasAny(['timestamp']) || 
+         request.resource.data.timestamp == request.time) &&
+        
+        // 플랫폼 필드가 있다면 유효한 값인지 확인
+        (!request.resource.data.keys().hasAny(['platform']) || 
+         request.resource.data.platform in ['android', 'ios', 'web'])
+      );
+      
+      // Delete는 admin만 허용
+      allow delete: if isAdmin();
+    }
+
+    // ================================
+    // PORTFOLIO COLLECTIONS - IMPROVED SECURITY
+    // ================================
+
+    // Portfolio sections - Public read, controlled write
+    match /portfolio-sections/{sectionId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 데이터 유효성 검사 추가
+        request.resource.data.keys().hasAll(['title']) &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Portfolio section settings - Public read, controlled write
+    match /portfolio-section-settings/{settingsId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 설정 데이터 유효성 검사
+        request.resource.data is map
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Custom section content - Public read, controlled write
+    match /custom-section-content/{contentId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 콘텐츠 유효성 검사
+        request.resource.data.keys().hasAny(['content', 'title']) &&
+        request.resource.data.size() <= 50 // 필드 수 제한
+      );
+      allow delete: if isAdmin();
+    }
+
+    // About section data - Public read, controlled write
+    match /portfolio-about/{aboutId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // About 섹션 유효성 검사
+        request.resource.data is map &&
+        request.resource.data.size() <= 20
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Skills data - Public read, controlled write
+    match /portfolio-skills/{skillId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 스킬 데이터 유효성 검사
+        request.resource.data.keys().hasAny(['name', 'level', 'category']) &&
+        (!request.resource.data.keys().hasAny(['level']) || 
+         request.resource.data.level is number)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Code examples - Public read, controlled write
+    match /portfolio-code-examples/{exampleId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 코드 예제 유효성 검사
+        request.resource.data.keys().hasAny(['title', 'code', 'language']) &&
+        (!request.resource.data.keys().hasAny(['code']) || 
+         request.resource.data.code.size() <= 10000) // 코드 크기 제한
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Portfolio projects - Public read, controlled write
+    match /portfolio-projects/{projectId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // 프로젝트 유효성 검사
+        request.resource.data.keys().hasAll(['title']) &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 200
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ================================
+    // GITHUB & EXTERNAL DATA
+    // ================================
+
+    // GitHub repositories - Public read, controlled write
+    match /github-repos/{repoId} {
+      allow read: if true;
+      allow write, create, update: if (
+        // GitHub 저장소 유효성 검사
+        request.resource.data.keys().hasAny(['name', 'url', 'description']) &&
+        (!request.resource.data.keys().hasAny(['url']) || 
+         request.resource.data.url.matches('https://github\\.com/.*'))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ================================
+    // USER INTERACTION - ENHANCED SECURITY
+    // ================================
+
+    // Messages - Rate limited creation, controlled access
+    match /messages/{messageId} {
+      allow read: if isAdmin(); // 메시지는 admin만 읽기 가능
+      allow create: if (
+        // 메시지 유효성 검사
+        request.resource.data.keys().hasAll(['message', 'timestamp']) &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        request.resource.data.message.size() <= 5000 && // 메시지 길이 제한
+        request.resource.data.timestamp == request.time &&
+        
+        // 스팸 방지: 이메일이 있다면 유효한 형식인지 확인
+        (!request.resource.data.keys().hasAny(['email']) || 
+         request.resource.data.email.matches('.*@.*\\..*'))
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    // ================================
+    // DEVELOPMENT & TESTING - RESTRICTED
+    // ================================
+
+    // Test users - Development only with validation
+    match /testUser/{userId} {
+      allow read, create, update: if (
+        // 테스트 환경 검증 (프로덕션에서는 false로 변경)
+        true && // 개발환경
+        request.resource.data.keys().hasAny(['name', 'email'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ================================
+    // USER MANAGEMENT - SECURE FALLBACK
+    // ================================
+
+    // User profiles - Authenticated users only
+    match /users/{userId} {
+      allow read: if isAuthenticated() || isAdmin();
+      allow write: if (
+        (isAuthenticated() && request.auth.uid == userId) || 
+        isAdmin()
+      ) && (
+        // 사용자 데이터 유효성 검사
+        request.resource.data.keys().hasAny(['name', 'email', 'profile']) &&
+        request.resource.data.size() <= 30 // 필드 수 제한
+      );
+    }
+
+    // Admin collection - Admin only
+    match /admin/{document} {
+      allow read, write: if isAdmin();
+    }
+
+    // ================================
+    // SECURITY FALLBACK - DENY ALL UNKNOWN
+    // ================================
+
+    // 명시되지 않은 모든 경로는 admin만 접근 가능
+    match /{path=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

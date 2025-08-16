@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:pub.dev)",
+      "WebFetch(domain:codelabs.developers.google.com)",
+      "WebFetch(domain:riverpod.dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
