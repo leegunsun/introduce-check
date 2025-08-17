@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:introduceme/fcm/NotificationUtility.dart';
@@ -5,9 +6,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../fcm/FcmTokenManager.dart';
 import '../providers/webview_provider.dart';
 import '../providers/app_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/error_widget.dart';
+import '../widgets/auth_debug_widget.dart';
 
 /// 메인 WebView 화면
 class WebViewScreen extends ConsumerStatefulWidget {
@@ -63,6 +66,7 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
   Widget build(BuildContext context) {
     final webViewState = ref.watch(webViewProvider);
     final appState = ref.watch(appProvider);
+    final authState = ref.watch(authProvider);
     final showNavigationControls = ref.watch(showNavigationControlsProvider);
 
     return SafeArea(
@@ -158,14 +162,28 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
             ],
           ),
           // 하단 상태 표시
-          bottomNavigationBar: _buildBottomStatusBar(webViewState),
+          bottomNavigationBar: _buildBottomStatusBar(webViewState, authState),
+          // Debug FAB (Development only)
+          floatingActionButton: kDebugMode ? FloatingActionButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AuthDebugWidget(),
+                ),
+              );
+            },
+            backgroundColor: authState.isAuthenticated ? Colors.green : Colors.orange,
+            child: Icon(
+              authState.isAuthenticated ? Icons.lock_open : Icons.lock,
+            ),
+          ) : null,
         ),
       ),
     );
   }
 
   /// 하단 상태 표시 바 생성
-  Widget? _buildBottomStatusBar(WebViewState webViewState) {
+  Widget? _buildBottomStatusBar(WebViewState webViewState, AuthState authState) {
     if (webViewState.currentUrl.isEmpty) return null;
 
     return Container(
@@ -173,6 +191,7 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
       color: Theme.of(context).colorScheme.surfaceVariant,
       child: Row(
         children: [
+          // Security icon
           Icon(
             Icons.security,
             size: 16,
@@ -181,6 +200,7 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
                 : Colors.orange,
           ),
           const SizedBox(width: 8),
+          // URL
           Expanded(
             child: Text(
               webViewState.currentUrl,
@@ -188,6 +208,26 @@ class _WebViewScreenState extends ConsumerState<WebViewScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          // Authentication status (Debug mode only)
+          if (kDebugMode) ...[
+            const SizedBox(width: 8),
+            Icon(
+              authState.isAuthenticated ? Icons.person : Icons.person_outline,
+              size: 16,
+              color: authState.isAuthenticated ? Colors.green : Colors.grey,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              authState.isAuthenticated 
+                ? '인증됨' 
+                : authState.isInitialized 
+                  ? '미인증' 
+                  : '초기화중',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: authState.isAuthenticated ? Colors.green : Colors.grey,
+              ),
+            ),
+          ],
         ],
       ),
     );

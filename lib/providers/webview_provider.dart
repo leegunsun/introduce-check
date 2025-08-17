@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'auth_provider.dart';
 
 /// WebView 상태를 관리하는 데이터 클래스
 class WebViewState {
@@ -113,6 +114,18 @@ final webViewControllerProvider = Provider<WebViewController>((ref) {
   // 기본 설정
   controller.setJavaScriptMode(JavaScriptMode.unrestricted);
   
+  // Authentication bridge 초기화 (비동기)
+  Future.microtask(() async {
+    try {
+      debugPrint('🌉 Initializing authentication bridge with WebView controller...');
+      final authNotifier = ref.read(authProvider.notifier);
+      await authNotifier.initializeBridge(controller);
+      debugPrint('🌉 ✅ Authentication bridge initialized successfully');
+    } catch (e) {
+      debugPrint('🌉 ❌ Failed to initialize authentication bridge: $e');
+    }
+  });
+  
   return controller;
 });
 
@@ -148,6 +161,15 @@ NavigationDelegate createNavigationDelegate(WidgetRef ref) {
         ref.read(webViewProvider.notifier).updateNavigationState(canGoBack, canGoForward);
       } catch (e) {
         debugPrint('네비게이션 상태 업데이트 실패: $e');
+      }
+      
+      // Authentication bridge JavaScript injection
+      try {
+        final authNotifier = ref.read(authProvider.notifier);
+        await authNotifier.bridgeService.injectJavaScriptFunctions();
+        debugPrint('🌉 ✅ Authentication bridge functions injected after page load');
+      } catch (e) {
+        debugPrint('🌉 ❌ Failed to inject authentication bridge functions: $e');
       }
     },
     onWebResourceError: (WebResourceError error) {

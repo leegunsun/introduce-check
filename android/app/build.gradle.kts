@@ -29,7 +29,7 @@ android {
         applicationId = "com.example.introduceme"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21  // Explicitly set for WebView compatibility
+        minSdk = 23  // Updated for Firebase Auth compatibility (requires min SDK 23)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
