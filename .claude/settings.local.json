@@ -5,7 +5,10 @@
       "WebFetch(domain:pub.dev)",
       "WebFetch(domain:codelabs.developers.google.com)",
       "WebFetch(domain:riverpod.dev)",
-      "WebFetch(domain:developer.android.com)"
+      "WebFetch(domain:developer.android.com)",
+      "WebFetch(domain:romannurik.github.io)",
+      "WebFetch(domain:lakshydeep-14.medium.com)",
+      "WebFetch(domain:docs.flutter.dev)"
     ],
     "deny": [],
     "ask": []
