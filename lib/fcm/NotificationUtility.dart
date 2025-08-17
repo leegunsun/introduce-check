@@ -8,9 +8,9 @@ class NotificationUtility {
 
     final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     
-    // 안드로이드 초기화 설정 (커스텀 모니터 아이콘 설정)
+    // 안드로이드 초기화 설정 (커스텀 알림 아이콘 설정)
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@drawable/ic_notification');
     
     // iOS 초기화 설정
     const DarwinInitializationSettings initializationSettingsIOS =
@@ -69,8 +69,7 @@ class NotificationUtility {
                   channel.id,
                   channel.name,
                   channelDescription: channel.description,
-                  icon: '@mipmap/launcher_icon',
-                  // icon: '@mipmap/ic_launcher',
+                  icon: '@drawable/ic_notification',
                   largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
                 ),
                 iOS: const DarwinNotificationDetails( // ← iOS용 설정

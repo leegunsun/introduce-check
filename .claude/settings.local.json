@@ -8,7 +8,12 @@
       "WebFetch(domain:developer.android.com)",
       "WebFetch(domain:romannurik.github.io)",
       "WebFetch(domain:lakshydeep-14.medium.com)",
-      "WebFetch(domain:docs.flutter.dev)"
+      "WebFetch(domain:docs.flutter.dev)",
+      "WebFetch(domain:developer.apple.com)",
+      "WebFetch(domain:appradar.com)",
+      "WebFetch(domain:splitmetrics.com)",
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)"
     ],
     "deny": [],
     "ask": []
